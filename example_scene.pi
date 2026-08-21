@@ -1,0 +1,9 @@
+from manimlib import Circle
+from manimlib import Scene
+from manimlib import ShowCreation
+
+
+class IthonCircle(Scene):
+    def construct(self ∈ IthonCircle) → None:
+        circle ∈ Circle ← Circle()
+        self.play(ShowCreation(circle))

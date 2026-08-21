@@ -1,0 +1,48 @@
+name: Ithon migration
+
+on:
+  push:
+    branches: [rewrite/ithon]
+  pull_request:
+
+jobs:
+  checked-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: manimi
+      - uses: actions/checkout@v4
+        with:
+          repository: isomorphisms/ithon
+          ref: feature/manimi-dogfood
+          path: ithon
+      - name: Build Ithon
+        working-directory: ithon
+        run: |
+          ./configure --without-ensurepip
+          make -j2
+      - name: Check Ithon sources
+        working-directory: manimi
+        run: PYTHONPATH="$GITHUB_WORKSPACE/ithon/Lib" "$GITHUB_WORKSPACE/ithon/python" tests/check_ithon_sources.py
+
+  compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: manimi
+      - uses: actions/checkout@v4
+        with:
+          repository: isomorphisms/ithon
+          ref: feature/manimi-dogfood
+          path: ithon
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install numpy
+        working-directory: manimi
+      - run: python -m unittest tests.test_ithon_loader tests.test_ithon_rate_functions
+        working-directory: manimi
+        env:
+          ITHON_LIB: ${{ github.workspace }}/ithon/Lib

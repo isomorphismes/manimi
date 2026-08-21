@@ -1,0 +1,4 @@
+from manimlib.__main__ import main
+
+
+main()
