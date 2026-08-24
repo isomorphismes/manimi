@@ -5,6 +5,7 @@ import importlib
 import os
 import sys
 import sysconfig
+from pathlib import Path
 
 from manimlib.config import manim_config
 from manimlib.logger import log
@@ -37,8 +38,8 @@ class ModuleLoader:
         if file_name is None:
             return None
 
-        module_name = file_name.replace(os.sep, ".").replace(".py", "")
-        spec = importlib.util.spec_from_file_location(module_name, file_name)
+        module_name = str(Path(file_name).with_suffix("")).replace(os.sep, ".")
+        spec = ModuleLoader._get_spec(module_name, file_name)
         module = importlib.util.module_from_spec(spec)
 
         if is_during_reload:
@@ -48,6 +49,34 @@ class ModuleLoader:
 
         spec.loader.exec_module(module)
         return module
+
+    @staticmethod
+    def _get_spec(module_name: str, file_name: str):
+        suffix = Path(file_name).suffix
+        if suffix == ".pi":
+            try:
+                from ithon_run import IthonSourceLoader
+            except ImportError as exc:
+                raise RuntimeError(
+                    "Ithon scenes must be loaded through Ithon; "
+                    "run ./bin/manimi instead of manimgl"
+                ) from exc
+            loader = IthonSourceLoader(module_name, file_name)
+            spec = importlib.util.spec_from_file_location(
+                module_name,
+                file_name,
+                loader=loader,
+            )
+        elif suffix == ".py":
+            spec = importlib.util.spec_from_file_location(module_name, file_name)
+        else:
+            raise ValueError(
+                f"Manimi scene source must use .pi or .py, not {suffix or '<no extension>'}"
+            )
+
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Could not create a loader for {file_name}")
+        return spec
 
     @staticmethod
     def _exec_module_and_track_imports(spec, module: Module) -> set[str]:

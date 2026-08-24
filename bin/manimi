@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+
+manimi_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ithon_command=${ITHON_COMMAND:-ithon}
+ithon_python=${ITHON_PYTHON:-${MANIMI_PYTHON:-python3}}
+
+if ! command -v "$ithon_command" >/dev/null 2>&1; then
+    adjacent_ithon="$manimi_root/../ithon/ithon"
+    if [ -x "$adjacent_ithon" ]; then
+        ithon_command="$adjacent_ithon"
+    else
+        echo "manimi: Ithon was not found; set ITHON_COMMAND or put ithon on PATH" >&2
+        exit 127
+    fi
+fi
+
+if ! command -v "$ithon_python" >/dev/null 2>&1; then
+    echo "manimi: Python was not found; set MANIMI_PYTHON or ITHON_PYTHON" >&2
+    exit 127
+fi
+
+export ITHON_PYTHON="$ithon_python"
+export PYTHONPATH="$manimi_root${PYTHONPATH:+:$PYTHONPATH}"
+exec "$ithon_command" "$manimi_root/bin/manimi.pi" "$@"

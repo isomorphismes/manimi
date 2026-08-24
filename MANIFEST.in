@@ -1,2 +1,4 @@
 graft manimlib
+include example_scene.pi
+recursive-include bin manimi manimi.pi
 recursive-exclude manimlib *.pyc *.DS_Store
