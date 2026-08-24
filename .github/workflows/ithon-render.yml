@@ -1,0 +1,47 @@
+name: Ithon render
+
+on:
+  push:
+    branches: [fix/ithon-host-render]
+  pull_request:
+
+jobs:
+  checked-frame:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: manimi
+      - uses: actions/checkout@v4
+        with:
+          repository: isomorphisms/ithon
+          ref: feature/manimi-host-runtime
+          path: ithon
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install renderer system libraries
+        run: >-
+          sudo apt-get update && sudo apt-get install -y
+          ffmpeg pkg-config libpango1.0-dev libcairo2-dev
+          libvulkan1 mesa-vulkan-drivers
+      - name: Install Manimi
+        run: python -m pip install -e ./manimi
+      - name: Render one checked Ithon frame
+        working-directory: manimi
+        env:
+          ITHON_COMMAND: ${{ github.workspace }}/ithon/ithon
+          MANIMI_PYTHON: python
+          MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
+          WGPU_BACKEND_TYPE: Vulkan
+          XDG_CACHE_HOME: ${{ runner.temp }}/cache
+        run: >-
+          ./bin/manimi example_scene.pi IthonCircle
+          -s -w -r 320x180 --file_name ithon-circle -q
+      - name: Require the rendered frame
+        working-directory: manimi
+        run: test -s videos/ithon-circle.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ithon-circle-frame
+          path: manimi/videos/ithon-circle.png

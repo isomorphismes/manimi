@@ -23,13 +23,13 @@ The checked entrypoint is:
 ./bin/manimi example_scene.pi IthonCircle
 ```
 
-This requires the `feature/manimi-dogfood` branch of
+This requires the `feature/manimi-host-runtime` branch of
 [`isomorphisms/ithon`](https://github.com/isomorphisms/ithon), which adds the
-first class and expression checks needed by a Manim scene. Native Ithon is
-currently CPython 3.16 alpha, ahead of Manimi's compiled dependency stack, so
-this branch checks source and behavior but does not yet claim an Ithon render.
-The existing `manimgl` command remains the explicit foreign-Python path while
-modules are converted.
+first class and expression checks needed by a Manim scene and can run the
+checked Ithon frontend on the same installed Python as Manimi's compiled
+dependencies. Set `MANIMI_PYTHON` when those dependencies belong to a specific
+virtual environment. The existing `manimgl` command remains the explicit
+foreign-Python path while modules are converted.
 
 See [ITHON-MIGRATION.md](ITHON-MIGRATION.md) for the exact boundary, test
 gates, and remaining work.
