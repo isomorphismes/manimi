@@ -2,7 +2,7 @@ name: Ithon render
 
 on:
   push:
-    branches: [fix/ithon-host-render]
+    branches: [master]
   pull_request:
 
 jobs:
@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: isomorphisms/ithon
-          ref: feature/manimi-host-runtime
+          ref: main
           path: ithon
       - uses: actions/setup-python@v5
         with:

@@ -23,11 +23,10 @@ The checked entrypoint is:
 ./bin/manimi example_scene.pi IthonCircle
 ```
 
-This requires the `feature/manimi-host-runtime` branch of
-[`isomorphisms/ithon`](https://github.com/isomorphisms/ithon), which adds the
-first class and expression checks needed by a Manim scene and can run the
-checked Ithon frontend on the same installed Python as Manimi's compiled
-dependencies. Set `MANIMI_PYTHON` when those dependencies belong to a specific
+This uses the `main` branch of
+[`isomorphisms/ithon`](https://github.com/isomorphisms/ithon), which contains the
+class and expression checks needed by a Manim scene and can run the checked
+Ithon frontend on the same installed Python as Manimi's compiled dependencies. Set `MANIMI_PYTHON` when those dependencies belong to a specific
 virtual environment. The existing `manimgl` command remains the explicit
 foreign-Python path while modules are converted.
 

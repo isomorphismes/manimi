@@ -57,17 +57,10 @@ grammar, but are no longer an ABI gate for rendering Manimi.
 
 ## Ithon dependency
 
-The required Ithon work is stacked as follows:
-
-```text
-feature/pi-source-files
-    -> feature/manimi-dogfood
-    -> feature/manimi-host-runtime
-```
-
-`feature/manimi-dogfood` adds the smallest non-dynamic support demanded by this
-repository: explicitly typed classes, numeric unary expressions, compatible
-comparisons, and conditional expressions. It does not add a dynamic escape
-hatch for the rest of Manim. `feature/manimi-host-runtime` lowers the same
-checked syntax for an installed CPython runtime without putting Ithon's forked
-standard library on that interpreter's import path.
+The required Ithon work landed on `main` through Ithon PRs #2 and #5. It adds
+the smallest non-dynamic support demanded by this repository: explicitly typed
+classes, numeric unary expressions, compatible comparisons, and conditional
+expressions. It does not add a dynamic escape hatch for the rest of Manim. The
+host-runtime path lowers the same checked syntax for an installed CPython
+runtime without putting Ithon's forked standard library on that interpreter's
+import path.
