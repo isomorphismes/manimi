@@ -49,23 +49,18 @@ Every converted module must have:
   data;
 - no implicit `Any`, unchecked star import, or silent Python fallback.
 
-The current Ithon tree is based on CPython 3.16 development. Manimi's compiled
-dependencies do not yet provide a usable 3.16 stack, so this first slice checks
-Ithon source natively and compares pure behavior under the supported Python
-stack. Rendering through Ithon is blocked until Ithon supplies a supported
-runtime ABI or the dependency stack supports that interpreter. The foreign
-Python command remains explicit in the meantime.
+Ithon can run its checked frontend on the same installed Python as Manimi's
+compiled dependencies. `./bin/manimi` sets that interpreter explicitly and
+keeps the checked `.pi` entry point, `.pi` importer, and renderer in one
+process. Native CPython builds remain useful for testing Ithon's tokenizer and
+grammar, but are no longer an ABI gate for rendering Manimi.
 
 ## Ithon dependency
 
-The required Ithon work is stacked as follows:
-
-```text
-feature/pi-source-files
-    -> feature/manimi-dogfood
-```
-
-`feature/manimi-dogfood` adds the smallest non-dynamic support demanded by this
-repository: explicitly typed classes, numeric unary expressions, compatible
-comparisons, and conditional expressions. It does not add a dynamic escape
-hatch for the rest of Manim.
+The required Ithon work landed on `main` through Ithon PRs #2 and #5. It adds
+the smallest non-dynamic support demanded by this repository: explicitly typed
+classes, numeric unary expressions, compatible comparisons, and conditional
+expressions. It does not add a dynamic escape hatch for the rest of Manim. The
+host-runtime path lowers the same checked syntax for an installed CPython
+runtime without putting Ithon's forked standard library on that interpreter's
+import path.
