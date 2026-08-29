@@ -25,6 +25,8 @@ jobs:
           sudo apt-get update && sudo apt-get install -y
           ffmpeg pkg-config libpango1.0-dev libcairo2-dev
           libvulkan1 mesa-vulkan-drivers
+          texlive-latex-extra texlive-fonts-extra texlive-science
+          tipa dvisvgm
       - name: Install Manimi
         run: python -m pip install -e ./manimi
       - name: Render checked Ithon frames
