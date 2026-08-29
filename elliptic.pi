@@ -1,19 +1,18 @@
 import numpy as np
 
 from manimlib import BLUE
-from manimlib import DOWN
+from manimlib import DL
+from manimlib import DR
 from manimlib import GREEN
 from manimlib import GREY_B
 from manimlib import ImplicitFunction
-from manimlib import LEFT
 from manimlib import Line
 from manimlib import RED
-from manimlib import RIGHT
 from manimlib import Scene
 from manimlib import TEAL_B
 from manimlib import Tex
 from manimlib import UL
-from manimlib import UP
+from manimlib import UR
 from manimlib import YELLOW
 from manimlib import Dot
 
@@ -74,10 +73,10 @@ class EllipticSecantStatic(Scene):
             color=TEAL_B,
         )
 
-        p_label.next_to(p_dot, UP + LEFT)
-        q_label.next_to(q_dot, LEFT + DOWN)
-        minus_sum_label.next_to(minus_sum_dot, RIGHT + DOWN)
-        sum_label.next_to(sum_dot, RIGHT + UP)
+        p_label.next_to(p_dot, UL)
+        q_label.next_to(q_dot, DL)
+        minus_sum_label.next_to(minus_sum_dot, DR)
+        sum_label.next_to(sum_dot, UR)
         equation_label.to_corner(UL)
 
         self.add(
