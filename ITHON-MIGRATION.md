@@ -20,9 +20,24 @@ the implementation.
   command during migration.
 - Manimi's file loader uses Ithon's source loader for `.pi` scenes, so scene
   files receive the same whole-module check as imported Ithon modules.
-- The first engine module with an Ithon implementation is
-  `manimlib/utils/rate_functions.pi`. Its `.py` counterpart remains temporarily
-  for Python compatibility; Ithon's finder gives the `.pi` module priority.
+- The converted leaf modules are `manimlib/utils/rate_functions.pi` and
+  `manimlib/utils/images.pi`. Their `.py` counterparts remain temporarily for
+  Python compatibility; Ithon's finder gives the `.pi` modules priority.
+
+## Foreign facilities
+
+Ithon owns the syntax and whole-module checks for `.pi` files. The current host
+runtime still executes the checked lowering on CPython. NumPy, Pillow, wgpu-py,
+ManimPango, and their compiled dependencies remain explicit foreign libraries;
+Ithon checks their use at the import boundary, not their implementations. WGSL
+is likewise a renderer boundary: the checked render receipt requires successful
+WebGPU device creation and shader-module compilation, but does not claim that
+Ithon type-checks WGSL.
+
+The retained `.py` modules are loaded only as explicit compatibility references
+in parity tests. Those tests load the `.pi` side through
+`IthonSourceLoader`; manually lowering or rewriting a `.pi` file in a test does
+not count as checked execution.
 
 ## Ordered conversion
 

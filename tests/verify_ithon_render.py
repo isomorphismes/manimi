@@ -28,29 +28,42 @@ def read_json_lines(path: Path) -> list[dict]:
     ]
 
 
-def checked_sources(records: list[dict]) -> dict[str, str]:
-    required = {
-        (ROOT / "bin" / "manimi.pi").resolve(),
-        (ROOT / "example_scene.pi").resolve(),
-        (ROOT / "elliptic.pi").resolve(),
-    }
-    found: dict[Path, str] = {}
+def checked_sources(records: list[dict], required: set[Path]) -> dict[str, dict]:
+    required = {path.resolve() for path in required}
+    found: dict[Path, dict] = {}
     for record in records:
         if record.get("schema") != "ithon.checked.v1":
             raise AssertionError(f"unexpected Ithon receipt schema: {record!r}")
         filename = Path(record["filename"])
-        resolved = filename.resolve() if filename.is_absolute() else (ROOT / filename).resolve()
+        resolved = (
+            filename.resolve()
+            if filename.is_absolute()
+            else (ROOT / filename).resolve()
+        )
         if resolved in required:
             digest = sha256(resolved)
             if record.get("source_sha256") != digest:
                 raise AssertionError(f"checked source digest does not match {resolved}")
-            found[resolved] = digest
+            lowered_digest = record.get("lowered_sha256")
+            if (
+                not isinstance(lowered_digest, str)
+                or len(lowered_digest) != 64
+                or any(
+                    character not in "0123456789abcdef"
+                    for character in lowered_digest
+                )
+            ):
+                raise AssertionError(f"missing lowered-source digest for {resolved}")
+            found[resolved] = {
+                "source_sha256": digest,
+                "lowered_sha256": lowered_digest,
+            }
     missing = required - found.keys()
     if missing:
         raise AssertionError(f"render did not check: {sorted(map(str, missing))}")
     return {
-        str(path.relative_to(ROOT)): digest
-        for path, digest in sorted(found.items())
+        str(path.relative_to(ROOT)): digests
+        for path, digests in sorted(found.items())
     }
 
 
@@ -59,8 +72,8 @@ def gpu_receipt(records: list[dict]) -> dict:
         raise AssertionError("unexpected Manimi GPU receipt schema")
     devices = [record for record in records if record.get("event") == "device"]
     shaders = [record for record in records if record.get("event") == "wgsl_module"]
-    if len(devices) < 2:
-        raise AssertionError("both render processes must acquire a WebGPU device")
+    if not devices:
+        raise AssertionError("render process did not acquire a WebGPU device")
     if any(record.get("backend_request") != "Vulkan" for record in devices):
         raise AssertionError("the checked render did not request Vulkan")
     if not shaders:
@@ -97,15 +110,50 @@ def require_vulkan_log(name: str) -> None:
 
 def main() -> None:
     elliptic = load_checked_ithon(ROOT / "elliptic.pi", "elliptic_render_receipt")
-    ithon_records = read_json_lines(Path(os.environ["ITHON_CHECK_RECEIPT"]))
-    gpu_records = read_json_lines(Path(os.environ["MANIMI_GPU_RECEIPT"]))
+    compiler_commit = os.environ["ITHON_COMPILER_COMMIT"]
+    if (
+        len(compiler_commit) != 40
+        or any(character not in "0123456789abcdef" for character in compiler_commit)
+    ):
+        raise AssertionError(f"invalid Ithon compiler commit: {compiler_commit!r}")
+    circle_checks = checked_sources(
+        read_json_lines(Path(os.environ["ITHON_CIRCLE_CHECK_RECEIPT"])),
+        {
+            ROOT / "bin" / "manimi.pi",
+            ROOT / "example_scene.pi",
+        },
+    )
+    elliptic_checks = checked_sources(
+        read_json_lines(Path(os.environ["ITHON_ELLIPTIC_CHECK_RECEIPT"])),
+        {
+            ROOT / "bin" / "manimi.pi",
+            ROOT / "elliptic.pi",
+        },
+    )
+    circle_gpu = gpu_receipt(
+        read_json_lines(Path(os.environ["MANIMI_CIRCLE_GPU_RECEIPT"]))
+    )
+    elliptic_gpu = gpu_receipt(
+        read_json_lines(Path(os.environ["MANIMI_ELLIPTIC_GPU_RECEIPT"]))
+    )
     require_vulkan_log("ithon-circle.log")
     require_vulkan_log("elliptic-secant.log")
     receipt = {
         "schema": "manimi.checked-render.v1",
-        "ithon": checked_sources(ithon_records),
+        "ithon": {
+            "compiler_commit": compiler_commit,
+            "renders": {
+                "ithon-circle": circle_checks,
+                "elliptic-secant": elliptic_checks,
+            },
+        },
         "elliptic": elliptic_semantic_receipt(elliptic),
-        "webgpu": gpu_receipt(gpu_records),
+        "webgpu": {
+            "renders": {
+                "ithon-circle": circle_gpu,
+                "elliptic-secant": elliptic_gpu,
+            },
+        },
         "images": {
             "ithon-circle.png": image_receipt("ithon-circle.png", (320, 180)),
             "elliptic-secant.png": image_receipt("elliptic-secant.png", (1280, 720)),

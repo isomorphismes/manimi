@@ -1,36 +1,16 @@
-import importlib.util
 import math
-import os
 import sys
 import types
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from tests.ithon_support import load_checked_ithon
+
 
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON_SOURCE = ROOT / "manimlib" / "utils" / "rate_functions.py"
 ITHON_SOURCE = ROOT / "manimlib" / "utils" / "rate_functions.pi"
-
-
-def load_ithon_frontend():
-    ithon_lib = Path(os.environ.get("ITHON_LIB", ROOT.parent / "ithon" / "Lib"))
-
-    static_spec = importlib.util.spec_from_file_location(
-        "ithon_static",
-        ithon_lib / "ithon_static.py",
-    )
-    static_module = importlib.util.module_from_spec(static_spec)
-    sys.modules["ithon_static"] = static_module
-    static_spec.loader.exec_module(static_module)
-
-    frontend_spec = importlib.util.spec_from_file_location(
-        "ithon_frontend",
-        ithon_lib / "ithon_frontend.py",
-    )
-    frontend_module = importlib.util.module_from_spec(frontend_spec)
-    frontend_spec.loader.exec_module(frontend_module)
-    return frontend_module
 
 
 def bezier(points):
@@ -48,17 +28,8 @@ def bezier(points):
     return curve
 
 
-def execute_rate_functions(path, module_name, ithon=False):
+def execute_python(path, module_name):
     source = path.read_text(encoding="utf-8")
-    if ithon:
-        source = load_ithon_frontend().lower_source(source, str(path))
-        source = (
-            source.replace("←", "=")
-            .replace("×", "*")
-            .replace("÷", "/")
-            .replace("λ", "lambda")
-        )
-
     module = types.ModuleType(module_name)
     module.__file__ = str(path)
     exec(compile(source, str(path), "exec"), module.__dict__)
@@ -80,8 +51,8 @@ class IthonRateFunctionParityTest(unittest.TestCase):
             "manimlib.utils.bezier": bezier_module,
         }
         with patch.dict(sys.modules, stubs):
-            cls.python = execute_rate_functions(PYTHON_SOURCE, "rates_python")
-            cls.ithon = execute_rate_functions(ITHON_SOURCE, "rates_ithon", ithon=True)
+            cls.python = execute_python(PYTHON_SOURCE, "rates_python")
+            cls.ithon = load_checked_ithon(ITHON_SOURCE, "rates_ithon")
 
     def assert_close(self, left, right):
         self.assertTrue(math.isclose(left, right, rel_tol=1e-12, abs_tol=1e-12))
@@ -133,6 +104,9 @@ class IthonRateFunctionParityTest(unittest.TestCase):
         source = ITHON_SOURCE.read_text(encoding="utf-8")
         for glyph in ("∈", "←", "→", "×", "÷", "λ"):
             self.assertIn(glyph, source)
+
+    def test_parity_module_uses_ithon_runtime_loader(self):
+        self.assertEqual(type(self.ithon.__loader__).__name__, "IthonSourceLoader")
 
 
 if __name__ == "__main__":

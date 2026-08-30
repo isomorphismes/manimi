@@ -1,5 +1,3 @@
-import importlib.util
-import os
 import sys
 import types
 import unittest
@@ -8,38 +6,16 @@ from unittest.mock import patch
 
 import numpy as np
 
+from tests.ithon_support import load_checked_ithon
+
 
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON_SOURCE = ROOT / "manimlib" / "utils" / "images.py"
 ITHON_SOURCE = ROOT / "manimlib" / "utils" / "images.pi"
 
 
-def load_ithon_frontend():
-    ithon_lib = Path(os.environ.get("ITHON_LIB", ROOT.parent / "ithon" / "Lib"))
-
-    static_spec = importlib.util.spec_from_file_location(
-        "ithon_static",
-        ithon_lib / "ithon_static.py",
-    )
-    static_module = importlib.util.module_from_spec(static_spec)
-    sys.modules["ithon_static"] = static_module
-    static_spec.loader.exec_module(static_module)
-
-    frontend_spec = importlib.util.spec_from_file_location(
-        "ithon_frontend",
-        ithon_lib / "ithon_frontend.py",
-    )
-    frontend_module = importlib.util.module_from_spec(frontend_spec)
-    frontend_spec.loader.exec_module(frontend_module)
-    return frontend_module
-
-
-def execute_images(path, module_name, ithon=False):
+def execute_python(path, module_name):
     source = path.read_text(encoding="utf-8")
-    if ithon:
-        source = load_ithon_frontend().lower_source(source, str(path))
-        source = source.replace("←", "=")
-
     module = types.ModuleType(module_name)
     module.__file__ = str(path)
     exec(compile(source, str(path), "exec"), module.__dict__)
@@ -80,8 +56,8 @@ class IthonImagesParityTest(unittest.TestCase):
             "PIL.Image": image_module,
         }
         with patch.dict(sys.modules, stubs):
-            cls.python = execute_images(PYTHON_SOURCE, "images_python")
-            cls.ithon = execute_images(ITHON_SOURCE, "images_ithon", ithon=True)
+            cls.python = execute_python(PYTHON_SOURCE, "images_python")
+            cls.ithon = load_checked_ithon(ITHON_SOURCE, "images_ithon")
 
     def test_path_helpers_match(self):
         for name, value in (
@@ -115,6 +91,9 @@ class IthonImagesParityTest(unittest.TestCase):
         source = ITHON_SOURCE.read_text(encoding="utf-8")
         for glyph in ("∈", "←", "→"):
             self.assertIn(glyph, source)
+
+    def test_parity_module_uses_ithon_runtime_loader(self):
+        self.assertEqual(type(self.ithon.__loader__).__name__, "IthonSourceLoader")
 
 
 if __name__ == "__main__":
