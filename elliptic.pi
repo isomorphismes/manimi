@@ -26,14 +26,45 @@ def point(x ∈ float, y ∈ float) → np.ndarray:
     return np.array([x, y, 0.0])
 
 
+def secant_residual(
+    p_x ∈ float,
+    p_y ∈ float,
+    q_x ∈ float,
+    q_y ∈ float,
+    third_x ∈ float,
+    third_y ∈ float,
+) → float:
+    return (q_x - p_x) * (third_y - p_y) - (q_y - p_y) * (third_x - p_x)
+
+
+def reflection_x_residual(x ∈ float, reflected_x ∈ float) → float:
+    return reflected_x - x
+
+
+def reflection_y_residual(y ∈ float, reflected_y ∈ float) → float:
+    return reflected_y + y
+
+
+# These checked bindings are the construction rendered below and inspected by CI.
+geometry_tolerance ∈ float ← 1e-12
+p_x ∈ float ← -0.5
+p_y ∈ float ← 1.1726039399558574
+q_x ∈ float ← 1.0
+q_y ∈ float ← -1.0
+minus_sum_x ∈ float ← 1.597870168849652
+minus_sum_y ∈ float ← -1.8659567229498855
+sum_x ∈ float ← minus_sum_x
+sum_y ∈ float ← -minus_sum_y
+
+p ∈ np.ndarray ← point(p_x, p_y)
+q ∈ np.ndarray ← point(q_x, q_y)
+minus_sum ∈ np.ndarray ← point(minus_sum_x, minus_sum_y)
+sum_point ∈ np.ndarray ← point(sum_x, sum_y)
+
+
 class EllipticSecantStatic(Scene):
     def construct(self ∈ EllipticSecantStatic) → None:
         # P and Q lie on E.  The same secant meets E once more at -(P + Q).
-        p ∈ np.ndarray ← point(-0.5, 1.1726039399558574)
-        q ∈ np.ndarray ← point(1.0, -1.0)
-        minus_sum ∈ np.ndarray ← point(1.597870168849652, -1.8659567229498855)
-        sum_point ∈ np.ndarray ← point(1.597870168849652, 1.8659567229498855)
-
         curve ∈ ImplicitFunction ← ImplicitFunction(
             elliptic_equation,
             x_range=(-1.35, 2.20),

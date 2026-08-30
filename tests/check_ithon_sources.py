@@ -7,6 +7,7 @@ root = Path(__file__).resolve().parents[1]
 sources = (
     root / "bin" / "manimi.pi",
     root / "example_scene.pi",
+    root / "elliptic.pi",
     root / "manimlib" / "utils" / "rate_functions.pi",
     root / "manimlib" / "utils" / "images.pi",
 )

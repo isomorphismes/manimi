@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+import hashlib
+import json
+import os
 
 import numpy as np
 import wgpu
@@ -43,6 +46,15 @@ FRAME_DTYPE = uniform_block_dtype(*FRAME_UNIFORMS)
 # How many mobjects' worth of room a shared buffer starts with, doubling from there
 UNIFORM_BLOCKS = 256
 RECORDS = 4096
+
+
+def _record_gpu_event(event: dict) -> None:
+    path = os.environ.get("MANIMI_GPU_RECEIPT")
+    if not path:
+        return
+    record = {"schema": "manimi.webgpu.v1", **event}
+    with open(path, "a", encoding="utf-8") as receipt:
+        receipt.write(json.dumps(record, sort_keys=True) + "\n")
 
 
 class RenderPass(object):
@@ -109,6 +121,19 @@ class Gpu(object):
         self.adapter = wgpu.gpu.request_adapter_sync(power_preference="high-performance")
         self.device = self.adapter.request_device_sync()
         self.queue = self.device.queue
+        adapter_info = getattr(self.adapter, "info", {})
+        if hasattr(adapter_info, "items"):
+            adapter_info = {
+                str(key): str(value)
+                for key, value in adapter_info.items()
+            }
+        else:
+            adapter_info = {"description": str(adapter_info)}
+        _record_gpu_event({
+            "event": "device",
+            "backend_request": os.environ.get("WGPU_BACKEND_TYPE"),
+            "adapter": adapter_info,
+        })
 
         self.frame_uniforms = Uniforms(FRAME_DTYPE)
         # Which version of them was last sent, none having been, see StructuredArray.version
@@ -158,6 +183,10 @@ class Gpu(object):
         """One module holds both stages of a shader, sharing a struct rather than a varying"""
         if code not in self.modules:
             self.modules[code] = self.device.create_shader_module(code=code)
+            _record_gpu_event({
+                "event": "wgsl_module",
+                "source_sha256": hashlib.sha256(code.encode("utf-8")).hexdigest(),
+            })
         return self.modules[code]
 
     def texture(self, path: str) -> Any:
