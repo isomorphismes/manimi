@@ -25,9 +25,11 @@ jobs:
           sudo apt-get update && sudo apt-get install -y
           ffmpeg pkg-config libpango1.0-dev libcairo2-dev
           libvulkan1 mesa-vulkan-drivers
+          texlive-latex-extra texlive-fonts-extra texlive-science
+          tipa dvisvgm
       - name: Install Manimi
         run: python -m pip install -e ./manimi
-      - name: Render one checked Ithon frame
+      - name: Render checked Ithon frames
         working-directory: manimi
         env:
           ITHON_COMMAND: ${{ github.workspace }}/ithon/ithon
@@ -35,13 +37,26 @@ jobs:
           MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
           WGPU_BACKEND_TYPE: Vulkan
           XDG_CACHE_HOME: ${{ runner.temp }}/cache
-        run: >-
-          ./bin/manimi example_scene.pi IthonCircle
-          -s -w -r 320x180 --file_name ithon-circle -q
-      - name: Require the rendered frame
+          ITHON_CHECK_RECEIPT: ${{ runner.temp }}/ithon-checks.jsonl
+          MANIMI_GPU_RECEIPT: ${{ runner.temp }}/manimi-gpu.jsonl
+        run: |
+          mkdir -p videos
+          ./bin/manimi example_scene.pi IthonCircle \
+            -s -w -r 320x180 --file_name ithon-circle -q \
+            2>&1 | tee videos/ithon-circle.log
+          ./bin/manimi elliptic.pi EllipticSecantStatic \
+            -s -w -r 1280x720 --file_name elliptic-secant -q \
+            2>&1 | tee videos/elliptic-secant.log
+      - name: Verify the checked WebGPU render receipt
         working-directory: manimi
-        run: test -s videos/ithon-circle.png
+        env:
+          ITHON_CHECK_RECEIPT: ${{ runner.temp }}/ithon-checks.jsonl
+          MANIMI_GPU_RECEIPT: ${{ runner.temp }}/manimi-gpu.jsonl
+        run: python -m tests.verify_ithon_render
       - uses: actions/upload-artifact@v4
         with:
-          name: ithon-circle-frame
-          path: manimi/videos/ithon-circle.png
+          name: ithon-rendered-frames
+          path: |
+            manimi/videos/ithon-circle.png
+            manimi/videos/elliptic-secant.png
+            manimi/videos/checked-render-receipt.json

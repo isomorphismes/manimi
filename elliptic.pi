@@ -1,0 +1,126 @@
+import numpy as np
+
+from manimlib import BLUE
+from manimlib import DL
+from manimlib import DR
+from manimlib import GREEN
+from manimlib import GREY_B
+from manimlib import ImplicitFunction
+from manimlib import Line
+from manimlib import RED
+from manimlib import Scene
+from manimlib import TEAL_B
+from manimlib import Tex
+from manimlib import UL
+from manimlib import UR
+from manimlib import YELLOW
+from manimlib import Dot
+
+
+def elliptic_equation(x ∈ float, y ∈ float) → float:
+    # E: y² = x³ - x + 1
+    return y * y - x * x * x + x - 1.0
+
+
+def point(x ∈ float, y ∈ float) → np.ndarray:
+    return np.array([x, y, 0.0])
+
+
+def secant_residual(
+    p_x ∈ float,
+    p_y ∈ float,
+    q_x ∈ float,
+    q_y ∈ float,
+    third_x ∈ float,
+    third_y ∈ float,
+) → float:
+    return (q_x - p_x) * (third_y - p_y) - (q_y - p_y) * (third_x - p_x)
+
+
+def reflection_x_residual(x ∈ float, reflected_x ∈ float) → float:
+    return reflected_x - x
+
+
+def reflection_y_residual(y ∈ float, reflected_y ∈ float) → float:
+    return reflected_y + y
+
+
+# These checked bindings are the construction rendered below and inspected by CI.
+geometry_tolerance ∈ float ← 1e-12
+p_x ∈ float ← -0.5
+p_y ∈ float ← 1.1726039399558574
+q_x ∈ float ← 1.0
+q_y ∈ float ← -1.0
+minus_sum_x ∈ float ← 1.597870168849652
+minus_sum_y ∈ float ← -1.8659567229498855
+sum_x ∈ float ← minus_sum_x
+sum_y ∈ float ← -minus_sum_y
+
+p ∈ np.ndarray ← point(p_x, p_y)
+q ∈ np.ndarray ← point(q_x, q_y)
+minus_sum ∈ np.ndarray ← point(minus_sum_x, minus_sum_y)
+sum_point ∈ np.ndarray ← point(sum_x, sum_y)
+
+
+class EllipticSecantStatic(Scene):
+    def construct(self ∈ EllipticSecantStatic) → None:
+        # P and Q lie on E.  The same secant meets E once more at -(P + Q).
+        curve ∈ ImplicitFunction ← ImplicitFunction(
+            elliptic_equation,
+            x_range=(-1.35, 2.20),
+            y_range=(-3.20, 3.20),
+            min_depth=7,
+            max_quads=6000,
+            use_smoothing=True,
+            color=TEAL_B,
+            stroke_width=5.0,
+        )
+
+        secant ∈ Line ← Line(
+            point(-1.45, 2.548586435261234),
+            point(2.25, -2.810503283296548),
+            color=GREY_B,
+            stroke_width=3.0,
+        )
+        reflection ∈ Line ← Line(
+            minus_sum,
+            sum_point,
+            color=GREY_B,
+            stroke_width=2.0,
+        )
+
+        p_dot ∈ Dot ← Dot(p, radius=0.12, color=BLUE)
+        q_dot ∈ Dot ← Dot(q, radius=0.12, color=YELLOW)
+        minus_sum_dot ∈ Dot ← Dot(minus_sum, radius=0.12, color=RED)
+        sum_dot ∈ Dot ← Dot(sum_point, radius=0.12, color=GREEN)
+
+        p_label ∈ Tex ← Tex("P", font_size=40, color=BLUE)
+        q_label ∈ Tex ← Tex("Q", font_size=40, color=YELLOW)
+        minus_sum_label ∈ Tex ← Tex("-(P+Q)", font_size=38, color=RED)
+        sum_label ∈ Tex ← Tex("P+Q", font_size=40, color=GREEN)
+        equation_label ∈ Tex ← Tex(
+            "\\mathcal{E}:\\quad y^2=x^3-x+1",
+            font_size=36,
+            color=TEAL_B,
+        )
+
+        p_label.next_to(p_dot, UL)
+        q_label.next_to(q_dot, DL)
+        minus_sum_label.next_to(minus_sum_dot, DR)
+        sum_label.next_to(sum_dot, UR)
+        equation_label.to_corner(UL)
+
+        self.add(
+            curve,
+            secant,
+            reflection,
+            p_dot,
+            q_dot,
+            minus_sum_dot,
+            sum_dot,
+            p_label,
+            q_label,
+            minus_sum_label,
+            sum_label,
+            equation_label,
+        )

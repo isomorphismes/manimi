@@ -42,7 +42,12 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install numpy
         working-directory: manimi
-      - run: python -m unittest tests.test_ithon_loader tests.test_ithon_rate_functions tests.test_ithon_images
+      - run: >-
+          python -m unittest
+          tests.test_ithon_loader
+          tests.test_ithon_rate_functions
+          tests.test_ithon_images
+          tests.test_elliptic
         working-directory: manimi
         env:
           ITHON_LIB: ${{ github.workspace }}/ithon/Lib
