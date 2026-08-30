@@ -45,6 +45,10 @@ def reflection_y_residual(y ∈ float, reflected_y ∈ float) → float:
     return reflected_y + y
 
 
+def affine_coordinate(start ∈ float, end ∈ float, parameter ∈ float) → float:
+    return start + parameter × (end - start)
+
+
 # These checked bindings are the construction rendered below and inspected by CI.
 geometry_tolerance ∈ float ← 1e-12
 p_x ∈ float ← -0.5
@@ -56,10 +60,35 @@ minus_sum_y ∈ float ← -1.8659567229498855
 sum_x ∈ float ← minus_sum_x
 sum_y ∈ float ← -minus_sum_y
 
+secant_start_parameter ∈ float ← -19.0 ÷ 30.0
+secant_end_parameter ∈ float ← 11.0 ÷ 6.0
+secant_start_x ∈ float ← affine_coordinate(
+    p_x,
+    q_x,
+    secant_start_parameter,
+)
+secant_start_y ∈ float ← affine_coordinate(
+    p_y,
+    q_y,
+    secant_start_parameter,
+)
+secant_end_x ∈ float ← affine_coordinate(
+    p_x,
+    q_x,
+    secant_end_parameter,
+)
+secant_end_y ∈ float ← affine_coordinate(
+    p_y,
+    q_y,
+    secant_end_parameter,
+)
+
 p ∈ np.ndarray ← point(p_x, p_y)
 q ∈ np.ndarray ← point(q_x, q_y)
 minus_sum ∈ np.ndarray ← point(minus_sum_x, minus_sum_y)
 sum_point ∈ np.ndarray ← point(sum_x, sum_y)
+secant_start ∈ np.ndarray ← point(secant_start_x, secant_start_y)
+secant_end ∈ np.ndarray ← point(secant_end_x, secant_end_y)
 
 
 class EllipticSecantStatic(Scene):
@@ -77,8 +106,8 @@ class EllipticSecantStatic(Scene):
         )
 
         secant ∈ Line ← Line(
-            point(-1.45, 2.548586435261234),
-            point(2.25, -2.810503283296548),
+            secant_start,
+            secant_end,
             color=GREY_B,
             stroke_width=3.0,
         )

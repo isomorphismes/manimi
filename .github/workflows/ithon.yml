@@ -14,7 +14,7 @@ jobs:
           path: manimi
       - uses: actions/checkout@v4
         with:
-          repository: isomorphisms/ithon
+          repository: dilapidated-shed/ithon
           ref: main
           path: ithon
       - name: Build Ithon
@@ -34,7 +34,7 @@ jobs:
           path: manimi
       - uses: actions/checkout@v4
         with:
-          repository: isomorphisms/ithon
+          repository: dilapidated-shed/ithon
           ref: main
           path: ithon
       - uses: actions/setup-python@v5

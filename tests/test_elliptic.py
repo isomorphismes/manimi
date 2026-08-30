@@ -59,6 +59,11 @@ class EllipticConstructionTest(unittest.TestCase):
     def test_p_q_and_minus_sum_share_one_secant(self):
         self.assert_residual(self.receipt["secant_residual"])
 
+    def test_rendered_secant_contains_the_named_intersections(self):
+        for name, residual in self.receipt["rendered_secant_residuals"].items():
+            with self.subTest(point=name):
+                self.assert_residual(residual)
+
     def test_sum_is_the_x_axis_reflection_of_minus_sum(self):
         self.assert_residual(self.receipt["reflection_residuals"]["x"])
         self.assert_residual(self.receipt["reflection_residuals"]["y"])

@@ -19,6 +19,32 @@ def elliptic_semantic_receipt(scene) -> dict:
         scene.minus_sum_x,
         scene.minus_sum_y,
     )
+    rendered_secant = {
+        "P": scene.secant_residual(
+            scene.secant_start_x,
+            scene.secant_start_y,
+            scene.secant_end_x,
+            scene.secant_end_y,
+            scene.p_x,
+            scene.p_y,
+        ),
+        "Q": scene.secant_residual(
+            scene.secant_start_x,
+            scene.secant_start_y,
+            scene.secant_end_x,
+            scene.secant_end_y,
+            scene.q_x,
+            scene.q_y,
+        ),
+        "-(P+Q)": scene.secant_residual(
+            scene.secant_start_x,
+            scene.secant_start_y,
+            scene.secant_end_x,
+            scene.secant_end_y,
+            scene.minus_sum_x,
+            scene.minus_sum_y,
+        ),
+    }
     reflection = {
         "x": scene.reflection_x_residual(scene.minus_sum_x, scene.sum_x),
         "y": scene.reflection_y_residual(scene.minus_sum_y, scene.sum_y),
@@ -29,7 +55,13 @@ def elliptic_semantic_receipt(scene) -> dict:
         0.0,
     ])
     sum_coordinates = float(np.max(np.abs(scene.sum_point - expected_sum)))
-    residuals = [*curve.values(), secant, *reflection.values(), sum_coordinates]
+    residuals = [
+        *curve.values(),
+        secant,
+        *rendered_secant.values(),
+        *reflection.values(),
+        sum_coordinates,
+    ]
     if any(abs(value) > scene.geometry_tolerance for value in residuals):
         raise AssertionError(
             f"elliptic construction exceeds tolerance {scene.geometry_tolerance}: "
@@ -39,6 +71,7 @@ def elliptic_semantic_receipt(scene) -> dict:
         "tolerance": scene.geometry_tolerance,
         "curve_residuals": curve,
         "secant_residual": secant,
+        "rendered_secant_residuals": rendered_secant,
         "reflection_residuals": reflection,
         "sum_coordinate_residual": sum_coordinates,
     }

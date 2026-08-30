@@ -14,9 +14,13 @@ jobs:
           path: manimi
       - uses: actions/checkout@v4
         with:
-          repository: isomorphisms/ithon
+          repository: dilapidated-shed/ithon
           ref: main
           path: ithon
+      - name: Record Ithon revision
+        id: ithon_revision
+        working-directory: ithon
+        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -37,21 +41,31 @@ jobs:
           MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
           WGPU_BACKEND_TYPE: Vulkan
           XDG_CACHE_HOME: ${{ runner.temp }}/cache
-          ITHON_CHECK_RECEIPT: ${{ runner.temp }}/ithon-checks.jsonl
-          MANIMI_GPU_RECEIPT: ${{ runner.temp }}/manimi-gpu.jsonl
+          ITHON_CIRCLE_CHECK_RECEIPT: ${{ runner.temp }}/ithon-circle-checks.jsonl
+          ITHON_ELLIPTIC_CHECK_RECEIPT: ${{ runner.temp }}/elliptic-checks.jsonl
+          MANIMI_CIRCLE_GPU_RECEIPT: ${{ runner.temp }}/ithon-circle-gpu.jsonl
+          MANIMI_ELLIPTIC_GPU_RECEIPT: ${{ runner.temp }}/elliptic-gpu.jsonl
         run: |
+          set -o pipefail
           mkdir -p videos
-          ./bin/manimi example_scene.pi IthonCircle \
+          ITHON_CHECK_RECEIPT="$ITHON_CIRCLE_CHECK_RECEIPT" \
+            MANIMI_GPU_RECEIPT="$MANIMI_CIRCLE_GPU_RECEIPT" \
+            ./bin/manimi example_scene.pi IthonCircle \
             -s -w -r 320x180 --file_name ithon-circle -q \
             2>&1 | tee videos/ithon-circle.log
-          ./bin/manimi elliptic.pi EllipticSecantStatic \
+          ITHON_CHECK_RECEIPT="$ITHON_ELLIPTIC_CHECK_RECEIPT" \
+            MANIMI_GPU_RECEIPT="$MANIMI_ELLIPTIC_GPU_RECEIPT" \
+            ./bin/manimi elliptic.pi EllipticSecantStatic \
             -s -w -r 1280x720 --file_name elliptic-secant -q \
             2>&1 | tee videos/elliptic-secant.log
       - name: Verify the checked WebGPU render receipt
         working-directory: manimi
         env:
-          ITHON_CHECK_RECEIPT: ${{ runner.temp }}/ithon-checks.jsonl
-          MANIMI_GPU_RECEIPT: ${{ runner.temp }}/manimi-gpu.jsonl
+          ITHON_COMPILER_COMMIT: ${{ steps.ithon_revision.outputs.commit }}
+          ITHON_CIRCLE_CHECK_RECEIPT: ${{ runner.temp }}/ithon-circle-checks.jsonl
+          ITHON_ELLIPTIC_CHECK_RECEIPT: ${{ runner.temp }}/elliptic-checks.jsonl
+          MANIMI_CIRCLE_GPU_RECEIPT: ${{ runner.temp }}/ithon-circle-gpu.jsonl
+          MANIMI_ELLIPTIC_GPU_RECEIPT: ${{ runner.temp }}/elliptic-gpu.jsonl
         run: python -m tests.verify_ithon_render
       - uses: actions/upload-artifact@v4
         with:
